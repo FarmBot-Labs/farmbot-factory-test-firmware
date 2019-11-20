@@ -66,7 +66,8 @@ defmodule POST.MixProject do
       {:mdns_lite, "~> 0.4", targets: @all_targets},
 
       # Dependencies for specific targets
-      # {:nerves_system_rpi, "~> 1.8", runtime: false, targets: :rpi},
+      {:nerves_system_br, "~> 1.9.5", runtime: false, targets: @all_targets, override: true},
+      {:farmbot_system_rpi, "~> 1.9.0-farmbot.1", runtime: false, targets: :rpi},
       {:farmbot_system_rpi3, "~> 1.9.1-farmbot.2", runtime: false, targets: :rpi3}
     ]
   end
