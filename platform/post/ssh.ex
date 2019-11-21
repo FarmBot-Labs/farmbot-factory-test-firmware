@@ -9,7 +9,7 @@ defmodule POST.SSH do
     # Start the ssh server. In a real application, we'd need to link to the
     # daemon pid that's returned and put it in a supervision tree so that
     # crashes get handled properly.
-    # _ = start_ssh()
+    _ = start_ssh()
     children = []
     Supervisor.init(children, strategy: :one_for_one)
   end

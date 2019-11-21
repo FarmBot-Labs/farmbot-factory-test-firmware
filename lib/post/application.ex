@@ -10,14 +10,24 @@ defmodule POST.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: POST.Supervisor]
+    registry_name = registry_name()
 
     children = [
-      POST.PlatformSupervisor
-      # Children for all targets
-      # Starts a worker by calling: POST.Worker.start_link(arg)
-      # {POST.Worker, arg},
+      {Registry, [keys: :duplicate, name: registry_name]},
+      POST.PlatformSupervisor,
+      POST.Comms.FlashFirmware,
+      {POST.ButtonTable, registry_name},
+      POST.ButtonSupervisor,
+      POST.ButtonPopulator,
+      POST.LEDSupervisor,
+      POST.LEDPopulator,
+      POST.TestSuite
     ]
 
     Supervisor.start_link(children, opts)
+  end
+
+  def registry_name() do
+    DepTracker.Registry
   end
 end

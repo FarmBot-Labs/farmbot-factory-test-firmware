@@ -50,12 +50,13 @@ defmodule POST.MixProject do
     [
       # Dependencies for all targets
       {:nerves, "~> 1.5.0", runtime: false},
+      {:elixir_make, "~> 0.6", runtime: false},
       {:shoehorn, "~> 0.6"},
       {:ring_logger, "~> 0.6"},
       {:toolshed, "~> 0.2"},
       {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
       {:circuits_uart, "~> 1.3"},
-      {:elixir_make, "~> 0.6.0", runtime: false},
+      {:muontrap, "~> 0.5.0"},
 
       # Dependencies for all targets except :host
       {:nerves_runtime, "~> 0.10", targets: @all_targets},
@@ -64,6 +65,7 @@ defmodule POST.MixProject do
       {:nerves_firmware_ssh, "~> 0.2", targets: @all_targets},
       {:nerves_time, "~> 0.2", targets: @all_targets},
       {:mdns_lite, "~> 0.4", targets: @all_targets},
+      {:circuits_gpio, "~> 0.4.3", targets: @all_targets},
 
       # Dependencies for specific targets
       {:nerves_system_br, "~> 1.9.5", runtime: false, targets: @all_targets, override: true},

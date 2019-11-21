@@ -1,22 +1,11 @@
+#include <stdarg.h>
 #include <Arduino.h>
 
 #include <TMC2130Stepper.h>
 #include <AccelStepper.h>
 
-#if defined(MIX_TARGET_host)
-  #include "pins_express_k10.h"
-#endif
-
-#if defined(MIX_TARGET_rpi)
-  #include "pins_express_k10.h"
-#endif
-
-#if defined(MIX_TARGET_rpi3)
-  #include "pins_farmduino_k10.h"
-#endif
-
+#include "platform.h"
 #include "comms.h"
-#include <stdarg.h>
 void DEBUG_PRINT(const char *format,...)
 {
   char buff[255];
@@ -39,21 +28,29 @@ void DEBUG_PRINT(const char *format,...)
 #define MAX_SPEED 1000*STEPS_PER_MM
 #define ACCELERATION 1500*STEPS_PER_MM
 
-/** X1 stepper **/
+/** X1 stepper */
 static TMC2130Stepper TMC2130X = TMC2130Stepper(X_ENABLE_PIN, X_DIR_PIN, X_STEP_PIN, X_CHIP_SELECT);
 static AccelStepper stepperX = AccelStepper(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN);
 
-/** X2 driver **/
+/** X2 driver */
 static TMC2130Stepper TMC2130E = TMC2130Stepper(E_ENABLE_PIN, E_DIR_PIN, E_STEP_PIN, E_CHIP_SELECT);
 static AccelStepper stepperE = AccelStepper(AccelStepper::DRIVER, E_STEP_PIN, E_DIR_PIN);
 
-/** Y1 driver **/
+/** Y1 driver */
 static TMC2130Stepper TMC2130Y = TMC2130Stepper(Y_ENABLE_PIN, Y_DIR_PIN, Y_STEP_PIN, Y_CHIP_SELECT);
 static AccelStepper stepperY = AccelStepper(AccelStepper::DRIVER, Y_STEP_PIN, Y_DIR_PIN);
 
-/** Z1 driver **/
+/** Z1 driver */
 static TMC2130Stepper TMC2130Z = TMC2130Stepper(Z_ENABLE_PIN, Z_DIR_PIN, Z_STEP_PIN, Z_CHIP_SELECT);
 static AccelStepper stepperZ = AccelStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_DIR_PIN);
+
+#if defined(FARMDUINO_K15)
+
+/** AUX driver */
+static TMC2130Stepper TMC2130AUX = TMC2130Stepper(AUX_ENABLE_PIN, AUX_DIR_PIN, AUX_STEP_PIN, AUX_CHIP_SELECT);
+static AccelStepper stepperAUX = AccelStepper(AccelStepper::DRIVER, AUX_STEP_PIN, AUX_DIR_PIN);
+
+#endif
 
 /** Packet that is currently being built and processed */
 CommsPacket_t CurrentPacket;
@@ -87,6 +84,12 @@ void process_movement() {
       DEBUG_PRINT("spinning z1 numSteps=%d\r\n", numSteps);
       stepper = &stepperZ;
     break;
+#if defined(FARMDUINO_K15)
+    case MOVEMENT_AXIS_AUX:
+      DEBUG_PRINT("spinning aux numSteps=%d\r\n", numSteps);
+      stepper = &stepperAUX;
+    break;
+#endif
   }
 
   stepper->move(numSteps);
@@ -100,17 +103,44 @@ void process_movement() {
 }
 
 void process_pin() {
-  uint8_t pin = CurrentPacket.payload[0];
-  DEBUG_PRINT("PIN=%d\r\n", pin);
-  pinMode(pin, OUTPUT);
-  digitalWrite(pin, HIGH);
+  PIN_ARG_t pin = (PIN_ARG_t)CurrentPacket.payload[0];
+  uint8_t pinNum;
+  switch(pin) {
+    case PIN_ARG_LIGHTING:
+      DEBUG_PRINT("testing PIN_ARG_LIGHTING\r\n");
+      pinNum = LIGHTING_PIN;
+    break;
+    case PIN_ARG_WATER:
+      DEBUG_PRINT("testing PIN_ARG_WATER\r\n");
+      pinNum = WATER_PIN;
+    break;
+    case PIN_ARG_VACUUM:
+      DEBUG_PRINT("testing PIN_ARG_VACUUM\r\n");
+      pinNum = VACUUM_PIN;
+    break;
+#if defined(FARMDUINO_K15)
+    case PIN_ARG_P4:
+      DEBUG_PRINT("testing PIN_ARG_P4\r\n");
+      pinNum = PERIPHERAL_4_PIN;
+    break;
+    case PIN_ARG_P5:
+      DEBUG_PRINT("testing PIN_ARG_P5\r\n");
+      pinNum = PERIPHERAL_5_PIN;
+    break;
+#endif
+  }
+
+  digitalWrite(pinNum, LOW);
+  DEBUG_PRINT("PIN=%d state=LOW\r\n", pinNum);
+
+  digitalWrite(pinNum, HIGH);
+  DEBUG_PRINT("PIN=%d state=HIGH\r\n", pinNum);
   delay(500);
-  digitalWrite(pin, LOW);
+  digitalWrite(pinNum, LOW);
+  DEBUG_PRINT("PIN=%d state=LOW\r\n", pinNum);
 }
 
 void setup() {
-  pinMode(9, OUTPUT);
-  digitalWrite(9, HIGH);
   Serial.begin(9600);
   SPI.begin();
 
@@ -164,6 +194,24 @@ void setup() {
   stepperZ.setPinsInverted(false, false, true);
   stepperZ.enableOutputs();
 
+  // setup pins
+  pinMode(LIGHTING_PIN, OUTPUT);
+  digitalWrite(LIGHTING_PIN, LOW);
+
+  pinMode(WATER_PIN, OUTPUT);
+  digitalWrite(WATER_PIN, LOW);
+
+  pinMode(VACUUM_PIN, OUTPUT);
+  digitalWrite(VACUUM_PIN, LOW);
+
+#if defined(FARMDUINO_K15)
+  pinMode(PERIPHERAL_4_PIN, OUTPUT);
+  digitalWrite(PERIPHERAL_4_PIN, LOW);
+
+  pinMode(PERIPHERAL_5_PIN, OUTPUT);
+  digitalWrite(PERIPHERAL_5_PIN, LOW);
+#endif
+
   DEBUG_PRINT("SETUP.......");
   CurrentPacket._state = COMMS_STATE_OP;
   CurrentPacket.op = PACKET_OP_NOOP;
@@ -172,7 +220,6 @@ void setup() {
   for(uint8_t i = 0; i < COMMS_BUFFER_MAX; i++)
     CurrentPacket.payload[i] = 0x69;
   DEBUG_PRINT("ok\r\n");
-  digitalWrite(9, LOW);
 }
 
 void loop() {

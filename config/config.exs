@@ -24,10 +24,15 @@ config :shoehorn,
 # See https://hexdocs.pm/ring_logger/readme.html for more information on
 # configuring ring_logger.
 
-config :logger, backends: [RingLogger]
+config :logger, backends: [:console]
+config :logger, handle_sasl_reports: true, handle_otp_reports: true
 
 config :post, POST.PlatformSupervisor, children: []
 
 if Mix.target() != :host do
   import_config "target.exs"
+else
+  import_config "profiles/FARMDUINO_K15.ex"
+  config :post, POST.ButtonSupervisor, button: POST.NullButton
+  config :post, POST.LEDSupervisor, led: POST.NullLED
 end

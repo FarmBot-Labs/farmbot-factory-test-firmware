@@ -30,8 +30,21 @@ typedef enum {
   MOVEMENT_AXIS_X1,
   MOVEMENT_AXIS_X2,
   MOVEMENT_AXIS_Y1,
-  MOVEMENT_AXIS_Z1
+  MOVEMENT_AXIS_Z1,
+#if defined(FARMDUINO_K15)
+  MOVEMENT_AXIS_AUX
+#endif
 } MOVEMENT_AXIS_t;
+
+typedef enum {
+  PIN_ARG_LIGHTING,
+  PIN_ARG_WATER,
+  PIN_ARG_VACUUM,
+#if defined(FARMDUINO_K15)
+  PIN_ARG_P4,
+  PIN_ARG_P5
+#endif
+} PIN_ARG_t;
 
 /** Packet structure */
 typedef struct {

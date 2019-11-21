@@ -3,6 +3,7 @@ use Mix.Config
 # Authorize the device to receive firmware using your public key.
 # See https://hexdocs.pm/nerves_firmware_ssh/readme.html for more information
 # on configuring nerves_firmware_ssh.
+config :logger, backends: [RingLogger]
 
 keys =
   [
@@ -30,7 +31,7 @@ config :mdns_lite,
   # "nerves.local" for convenience. If more than one Nerves device is on the
   # network, delete "nerves" from the list.
 
-  host: [:hostname, "farmbot"],
+  host: [:hostname],
   ttl: 120,
 
   # Advertise the following services over mDNS.
@@ -55,6 +56,17 @@ config :mdns_lite,
     }
   ]
 
+wifi =
+  if System.get_env("SSID") do
+    %{
+      ssid: System.get_env("SSID"),
+      psk: System.get_env("PSK"),
+      key_mgmt: :wpa_psk
+    }
+  else
+    %{}
+  end
+
 config :vintage_net,
   regulatory_domain: "US",
   config: [
@@ -68,12 +80,15 @@ config :vintage_net,
      }},
     {"wlan0",
      %{
-       type: VintageNet.Technology.WiFi
+       type: VintageNet.Technology.WiFi,
+       ipv4: %{
+         method: :dhcp
+       },
+       wifi: wifi
      }}
   ]
 
 # Import target specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 # Uncomment to use target specific configurations
-
-# import_config "#{Mix.target()}.exs"
+import_config "#{Mix.target()}.exs"

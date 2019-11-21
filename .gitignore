@@ -19,3 +19,5 @@ erl_crash.dump
 .pio
 .vscode
 *.hex
+upload.sh
+.env

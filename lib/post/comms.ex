@@ -1,164 +1,96 @@
 defmodule POST.Comms do
-  defmodule Framing do
-    @behaviour Circuits.UART.Framing
-
-    defmodule State do
-      defstruct state: :get_opcode,
-                op: nil,
-                payload_length: nil,
-                payload: <<>>
-    end
-
-    def init(_args) do
-      {:ok, %State{state: :get_opcode}}
-    end
-
-    def add_framing(data, state) when is_binary(data) do
-      # No processing - assume the app knows to send the right number of bytes
-      {:ok, data, state}
-    end
-
-    def frame_timeout(state) do
-      IO.puts("frame timeout!")
-      # On a timeout, just return whatever was in the buffer
-      {:ok, [{state.op, state.payload_length, state.payload}], %State{state: :get_opcode}}
-    end
-
-    def flush(:transmit, state) do
-      # IO.inspect(state, label: "flush tx")
-      state
-    end
-
-    def flush(:receive, state) do
-      # IO.inspect(state, label: "flush rx")
-      state
-      # %State{state: :get_opcode}
-    end
-
-    def flush(:both, state) do
-      # IO.inspect(state, label: "flush both")
-      # %State{state: :get_opcode}
-      state
-    end
-
-    def remove_framing(data, state) do
-      process(data, state, [])
-    end
-
-    def process(<<op::integer-size(8), rest::binary>>, %State{state: :get_opcode} = state, m) do
-      # IO.inspect(op, label: "got opcode")
-      process(rest, %{state | state: :get_payload_length, op: op}, m)
-    end
-
-    def process(
-          <<payload_length::integer-size(8), rest::binary>>,
-          %State{state: :get_payload_length} = state,
-          m
-        ) do
-      # IO.inspect(payload_length, label: "got payload length")
-      process(rest, %{state | state: :get_payload, payload_length: payload_length}, m)
-    end
-
-    def process(<<char::binary-size(1), rest::binary>>, %State{state: :get_payload} = state, m) do
-      new_state = %{state | payload: state.payload <> char}
-
-      if byte_size(new_state.payload) == new_state.payload_length do
-        # IO.inspect(new_state, label: "payload built")
-        process(
-          rest,
-          %State{state: :get_opcode},
-          m ++ [{new_state.op, new_state.payload_length, new_state.payload}]
-        )
-      else
-        # IO.inspect(char, label: "buffering")
-        process(rest, new_state, m)
-      end
-    end
-
-    def process(<<>>, state, m) do
-      if byte_size(state.payload) == state.payload_length do
-        # IO.inspect(state, label: "payload built")
-        {:ok, m ++ [{state.op, state.payload_length, state.payload}], %State{state: :get_opcode}}
-      else
-        # IO.inspect(state, label: "partial state (empty buffer)")
-        {:in_frame, m, state}
-      end
-    end
-  end
+  @moduledoc """
+  handles communicating with the arduino.
+  UART connection is not stored, and shoudl be closed after every test
+  """
 
   alias Circuits.UART
+  alias POST.Comms.Framing
 
+  @serial_port Application.get_env(:post, __MODULE__)[:device]
+  @serial_port ||
+    Mix.raise("""
+    No serial device configured.
+    """)
+
+  @doc "returns the configured serial port"
+  def serial_port(), do: @serial_port
+
+  @doc "tests comms"
   def test do
     {:ok, uart} = UART.start_link()
-    :ok = UART.open(uart, "ttyUSB0", active: true, speed: 9600, framing: Framing)
-    # :ok = UART.write(uart, <<114, 0>>)
-    # :ok = ready(uart)
-    Process.sleep(500)
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
     data = <<0x0::integer-size(8), 0x0::integer-size(8)>>
     :ok = UART.write(uart, data)
-    do_recv(uart)
+    recv_close(uart)
   end
 
-  def test1 do
-    {:ok, uart} = UART.start_link()
-    :ok = UART.open(uart, "ttyUSB0", active: true, speed: 9600, framing: Framing)
-    :ok = UART.write(uart, <<114, 0>>)
-    UART.close(uart)
-  end
-
+  @doc "does a movement on an axis for a number of steps"
   def move(axis, steps) do
     {:ok, uart} = UART.start_link()
-    :ok = UART.open(uart, "ttyUSB0", active: true, speed: 9600, framing: Framing)
-    :ok = UART.write(uart, <<114, 0>>)
-    :ok = ready(uart)
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
 
     data =
       <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
         steps::unsigned-integer-big-size(32)>>
 
     :ok = UART.write(uart, data)
-    do_recv(uart)
+    recv_close(uart)
   end
 
+  def move2(axis, steps) do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
+
+    move1 =
+      <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
+        steps::unsigned-integer-big-size(32)>>
+
+    move2 =
+      <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
+        steps * -1::unsigned-integer-big-size(32)>>
+
+    :ok = UART.write(uart, move1)
+    recv(uart)
+    :ok = UART.write(uart, move2)
+    recv_close(uart)
+  end
+
+  @doc "writes a pin number"
   def pin(number) do
     {:ok, uart} = UART.start_link()
-    :ok = UART.open(uart, "ttyUSB0", active: true, speed: 9600, framing: Framing)
-    :ok = ready(uart)
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
     data = <<112::integer-size(8), 0x1::integer-size(8), number::integer-size(8)>>
     :ok = UART.write(uart, data)
-    do_recv(uart)
+    recv_close(uart)
   end
 
-  def ready(uart) do
-    UART.flush(uart)
+  def reset_test do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    Circuits.UART.set_dtr(uart, true)
+    # Circuits.UART.set_dtr(uart, false)
+    # Process.sleep(10)
+    do_sleep_hack()
+    data = <<0x0::integer-size(8), 0x0::integer-size(8)>>
+    :ok = UART.write(uart, data)
+    recv_close(uart)
+  end
 
+  @doc false
+  def do_sleep_hack, do: Process.sleep(1000)
+
+  @doc false
+  def recv_close(uart) do
     receive do
       {_, _, {100, _, data}} ->
         debug_message = IO.iodata_to_binary(data)
         IO.write(:stdio, debug_message)
-        ready(uart)
-
-      {_, _, {0, 0, <<>>}} ->
-        :ok
-
-      {_, _, {114, _, _}} ->
-        :ok
-
-      error ->
-        {:error, error}
-    after
-      5000 -> {:error, :timeout}
-    end
-  end
-
-  def do_recv(uart) do
-    UART.flush(uart)
-
-    receive do
-      {_, _, {100, _, data}} ->
-        debug_message = IO.iodata_to_binary(data)
-        IO.write(:stdio, debug_message)
-        do_recv(uart)
+        recv_close(uart)
 
       {_, _, {0, 0, <<>>}} ->
         UART.close(uart)
@@ -169,6 +101,25 @@ defmodule POST.Comms do
         IO.puts("timeout waiting for command to complete!")
         UART.close(uart)
         :ok = GenServer.stop(uart, :normal)
+        :error
+    end
+  end
+
+  def recv(uart) do
+    receive do
+      {_, _, {100, _, data}} ->
+        debug_message = IO.iodata_to_binary(data)
+        IO.write(:stdio, debug_message)
+        recv(uart)
+
+      {_, _, {0, 0, <<>>}} ->
+        :ok
+    after
+      5000 ->
+        IO.puts("timeout waiting for command to complete!")
+        UART.close(uart)
+        :ok = GenServer.stop(uart, :normal)
+        :error
     end
   end
 end

@@ -42,5 +42,5 @@ $(PREFIX):
 	mkdir -p $(PREFIX)
 
 $(PREFIX)/firmware.hex: $(FIRMWARE_SRC)
-	PLATFORMIO_BUILD_FLAGS="-DMIX_TARGET_$(MIX_TARGET)" platformio run -d firmware_src/
+	PLATFORMIO_BUILD_FLAGS="-DMIX_TARGET_$(MIX_TARGET) -DMIX_TARGET=\"$(MIX_TARGET)\"" platformio run -d firmware_src/
 	cp firmware_src/.pio/build/megaatmega2560/firmware.hex $(PREFIX)/firmware.hex
