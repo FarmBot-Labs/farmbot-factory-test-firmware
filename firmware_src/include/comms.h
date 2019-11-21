@@ -22,7 +22,9 @@ typedef enum {
   /** ASCII d */
   PACKET_OP_DEBUG = 100,
   /** ASCII r */
-  PACKET_OP_READY = 114
+  PACKET_OP_READY = 114,
+  /** ASCII t */
+  PACKET_OP_TEST = 116
 } CommsPacketOp_t;
 
 /** argv[0] of the PACKET_OP_MOVEMENT command */

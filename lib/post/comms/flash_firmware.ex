@@ -30,7 +30,7 @@ defmodule POST.Comms.FlashFirmware do
           _ = Comms.test()
           :ignore
 
-        :ok ->
+        {:ok, _} ->
           :ignore
       end
     end

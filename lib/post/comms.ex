@@ -26,6 +26,33 @@ defmodule POST.Comms do
     recv_close(uart)
   end
 
+  def move_enc(axis, steps) do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
+
+    movement =
+      <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
+        steps::unsigned-integer-big-size(32)>>
+
+    :ok = UART.write(uart, movement)
+    recv(uart)
+
+    test = <<116::integer-size(8), 0x0::integer-size(8)>>
+    :ok = UART.write(uart, test)
+    recv_close(uart)
+  end
+
+  def test2() do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
+
+    test = <<116::integer-size(8), 0x0::integer-size(8)>>
+    :ok = UART.write(uart, test)
+    recv_close(uart)
+  end
+
   @doc "does a movement on an axis for a number of steps"
   def move(axis, steps) do
     {:ok, uart} = UART.start_link()
@@ -92,10 +119,11 @@ defmodule POST.Comms do
         IO.write(:stdio, debug_message)
         recv_close(uart)
 
-      {_, _, {0, 0, <<>>}} ->
+      {_, _, {0, 4, <<return::integer-big-size(32)>>}} ->
+        IO.inspect(return, label: "RETURN")
         UART.close(uart)
         :ok = GenServer.stop(uart, :normal)
-        :ok
+        {:ok, return}
     after
       5000 ->
         IO.puts("timeout waiting for command to complete!")
@@ -112,8 +140,8 @@ defmodule POST.Comms do
         IO.write(:stdio, debug_message)
         recv(uart)
 
-      {_, _, {0, 0, <<>>}} ->
-        :ok
+      {_, _, {0, 4, <<return::integer-big-size(32)>>}} ->
+        {:ok, return}
     after
       5000 ->
         IO.puts("timeout waiting for command to complete!")

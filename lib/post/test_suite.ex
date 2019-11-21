@@ -39,6 +39,22 @@ defmodule POST.TestSuite do
     {:ok, %{state: :init, peripherals: peripherals(), motors: motors(), leds: leds()}}
   end
 
+  def handle_info(:encoder_error, state) do
+    # Logger.info "in error state"
+    for led <- leds() do
+      led_on(led)
+    end
+
+    Process.sleep(600)
+
+    for led <- leds() do
+      led_off(led)
+    end
+
+    Process.send_after(self(), :encoder_error, 600)
+    {:noreply, %{state | state: :error}}
+  end
+
   def handle_info(:init, state) do
     Logger.info("starting tests")
 
@@ -97,16 +113,40 @@ defmodule POST.TestSuite do
 
   def handle_info({:button, _, _, 0}, %{state: :motors, motors: [motor]} = state) do
     Logger.info("testing motor: #{motor} (this is the last one)")
-    _ = POST.Comms.move2(motor, 1000)
-    Process.sleep(100)
-    send(self(), :init)
+
+    case POST.Comms.move2(motor, 500) do
+      {:ok, steps} when steps >= 1 ->
+        send(self(), :init)
+        :ok
+
+      {:ok, steps} ->
+        send(self(), :encoder_error)
+        Logger.error("movement test failed! #{steps}")
+
+      :error ->
+        send(self(), :encoder_error)
+        Logger.error("movement test failed (no response)")
+    end
+
     {:noreply, %{state | motors: [], state: :complete}}
   end
 
   def handle_info({:button, _, _, 0}, %{state: :motors, motors: [motor | rest]} = state) do
     Logger.info("testing motor: #{motor}")
-    _ = POST.Comms.move2(motor, 1000)
-    Process.sleep(100)
+
+    case POST.Comms.move2(motor, 500) do
+      {:ok, steps} when steps >= 1 ->
+        :ok
+
+      {:ok, steps} ->
+        send(self(), :encoder_error)
+        Logger.error("movement test failed! #{steps}")
+
+      :error ->
+        send(self(), :encoder_error)
+        Logger.error("movement test failed (no response)")
+    end
+
     {:noreply, %{state | motors: rest}}
   end
 end

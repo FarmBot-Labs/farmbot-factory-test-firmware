@@ -1,6 +1,6 @@
 #ifndef FARMDUINO_K15_H
 #define FARMDUINO_K15_H
-
+  #include "encoders.h"
   #define FARMDUINO_K15
 
   // X-AXIS

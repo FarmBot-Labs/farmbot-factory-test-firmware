@@ -1,27 +1,12 @@
-#include <stdarg.h>
 #include <Arduino.h>
 
 #include <TMC2130Stepper.h>
 #include <AccelStepper.h>
 
+#include "debug.h"
 #include "platform.h"
 #include "comms.h"
-void DEBUG_PRINT(const char *format,...)
-{
-  char buff[255];
-  va_list args;
-  va_start (args,format);
-  size_t bytes_minus_null_written = vsnprintf(buff,sizeof(buff),format,args);
-  va_end (args);
-  buff[bytes_minus_null_written+1]='\0';
-
-  char header[2];
-  header[0] = PACKET_OP_DEBUG;
-  header[1] = bytes_minus_null_written;
-  Serial.write(header, 2);
-  Serial.write(buff, bytes_minus_null_written);
-  Serial.flush();
-}
+#include "encoders.h"
 
 #define CURRENT_MA 600
 #define STEPS_PER_MM 5
@@ -48,13 +33,19 @@ static AccelStepper stepperZ = AccelStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_
 /** AUX driver */
 static TMC2130Stepper TMC2130AUX = TMC2130Stepper(AUX_ENABLE_PIN, AUX_DIR_PIN, AUX_STEP_PIN, AUX_CHIP_SELECT);
 static AccelStepper stepperAUX = AccelStepper(AccelStepper::DRIVER, AUX_STEP_PIN, AUX_DIR_PIN);
+
+/** Encoders */
+static MDLEncoder encoderX = MDLEncoder(MDLEncoder::MDL_X1);
+static MDLEncoder encoderE = MDLEncoder(MDLEncoder::MDL_X2);
+static MDLEncoder encoderY = MDLEncoder(MDLEncoder::MDL_Y);
+static MDLEncoder encoderZ = MDLEncoder(MDLEncoder::MDL_Z);
 #endif
 
 /** Packet that is currently being built and processed */
 CommsPacket_t CurrentPacket;
 
 /** Does moves a number of steps **/
-void process_movement() {
+uint32_t process_movement() {
   MOVEMENT_AXIS_t axis = (MOVEMENT_AXIS_t)CurrentPacket.payload[0];
   uint32_t numSteps = 
       (uint32_t)CurrentPacket.payload[1] << 24 |
@@ -62,26 +53,47 @@ void process_movement() {
       (uint32_t)CurrentPacket.payload[3] << 8  |
       (uint32_t)CurrentPacket.payload[4];
   AccelStepper* stepper;
+#if defined(FARMDUINO_K15)
+  MDLEncoder* encoder;
+  uint32_t ret = 0;
+#endif
   switch(axis) {
-    case MOVEMENT_AXIS_X1:
+    case MOVEMENT_AXIS_X1: {
       DEBUG_PRINT("spinning x1 numSteps=%d\r\n", numSteps);
       stepper = &stepperX;
-    break;
+#if defined(FARMDUINO_K15)
+      encoder = &encoderX;
+#endif
+      break;
+    }
 
-    case MOVEMENT_AXIS_X2:
+    case MOVEMENT_AXIS_X2: {
       DEBUG_PRINT("spinning x2 numSteps=%d\r\n", numSteps);
       stepper = &stepperE;
-    break;
+#if defined(FARMDUINO_K15)
+      encoder = &encoderE;
+#endif
+      break;
+    }
 
-    case MOVEMENT_AXIS_Y1:
+    case MOVEMENT_AXIS_Y1: {
       DEBUG_PRINT("spinning y1 numSteps=%d\r\n", numSteps);
       stepper = &stepperY;
-    break;
+#if defined(FARMDUINO_K15)
+      encoder = &encoderY;
+#endif
+      break;
+    }
 
-    case MOVEMENT_AXIS_Z1:
+    case MOVEMENT_AXIS_Z1: {
       DEBUG_PRINT("spinning z1 numSteps=%d\r\n", numSteps);
       stepper = &stepperZ;
-    break;
+#if defined(FARMDUINO_K15)
+      encoder = &encoderZ;
+#endif
+      break;
+    }
+
 #if defined(FARMDUINO_K15)
     case MOVEMENT_AXIS_AUX:
       DEBUG_PRINT("spinning aux numSteps=%d\r\n", numSteps);
@@ -90,17 +102,53 @@ void process_movement() {
 #endif
   }
 
+#if defined(FARMDUINO_K15)
+  encoder->reset();
+#endif
   stepper->move(numSteps);
   stepper->enableOutputs();
-
-  while (stepper->distanceToGo() != 0)
+  while (stepper->distanceToGo() != 0) {
     stepper->run();
+#if defined(FARMDUINO_K15)
+    encoder->read();
+#endif
+  }
     
   stepper->disableOutputs();
+#if defined(FARMDUINO_K15)
+  ret = encoder->read();
+  DEBUG_PRINT("MOVEMENT OK ret=%d\r\n", ret);
+  return ret;
+#else
   DEBUG_PRINT("MOVEMENT OK\r\n");
+  return (uint32_t)numSteps;
+#endif
 }
 
-void process_pin() {
+uint32_t process_test() 
+{
+#if defined(FARMDUINO_K15)
+  encoderX.reset();
+  stepperX.move(500);
+  stepperX.enableOutputs();
+  while (stepperX.distanceToGo() != 0) {
+    stepperX.run();
+    encoderX.read();
+  }
+  stepperX.disableOutputs();
+  delay(20);
+  DEBUG_PRINT("starting test\r\n");
+  while(1==1) {
+    uint32_t val = encoderX.read();
+    DEBUG_PRINT("X1=");
+    DEBUG_PRINT("%d\r\n", val);
+    delay(200);
+  }
+#endif
+  return 0;
+}
+
+uint32_t process_pin() {
   PIN_ARG_t pin = (PIN_ARG_t)CurrentPacket.payload[0];
   uint8_t pinNum;
   switch(pin) {
@@ -136,11 +184,24 @@ void process_pin() {
   delay(500);
   digitalWrite(pinNum, LOW);
   DEBUG_PRINT("PIN=%d state=LOW\r\n", pinNum);
+  return 0;
 }
 
 void setup() {
+  // setup encoders
+  pinMode(MDL_ENABLE_PIN, INPUT_PULLUP);
+  pinMode(MDL_CHIP_SELECT, OUTPUT);
+  digitalWrite(MDL_CHIP_SELECT, HIGH);
+
   Serial.begin(9600);
   SPI.begin();
+
+  while(1==1) {
+  uint32_t val = encoderX.read();
+  DEBUG_PRINT("X1=");
+  DEBUG_PRINT("%d\r\n", val);
+  delay(200);
+}
 
   // Initialize drivers
 
@@ -154,7 +215,7 @@ void setup() {
   stepperX.setAcceleration(ACCELERATION); 
   stepperX.setEnablePin(X_ENABLE_PIN);
   stepperX.setPinsInverted(false, false, true);
-  stepperX.enableOutputs();
+  // stepperX.enableOutputs();
 
   // X2
   TMC2130E.begin(); 			
@@ -204,6 +265,19 @@ void setup() {
   stepperAUX.setEnablePin(AUX_ENABLE_PIN);
   stepperAUX.setPinsInverted(false, false, true);
   stepperAUX.enableOutputs();
+
+  // Encoders
+  encoderX.begin();
+  encoderX.reset();
+
+  encoderE.begin();
+  encoderE.reset();
+
+  encoderY.begin();
+  encoderY.reset();
+
+  encoderZ.begin();
+  encoderZ.reset();
 #endif
 
   // setup pins
@@ -241,23 +315,31 @@ void loop() {
         DEBUG_PRINT("0x%02X ", CurrentPacket.payload[i]);
     }
     DEBUG_PRINT("\r\n");
+    uint32_t returnValue;
     switch(CurrentPacket.op) {
       case PACKET_OP_NOOP:
         DEBUG_PRINT("processing noop\r\n");
-        break;
+        returnValue = 0;
+      break;
       case PACKET_OP_MOVEMENT:
         DEBUG_PRINT("processing movement command\r\n");
-        process_movement();
-        break;
+        returnValue = process_movement();
+      break;
       case PACKET_OP_PIN:
         DEBUG_PRINT("processing pin control\r\n");
-        process_pin();
-        break;
+        returnValue = process_pin();
+      break;
       case PACKET_OP_READY:
-        DEBUG_PRINT("processing ready message\r\n");\
-        break;
+        DEBUG_PRINT("processing ready message\r\n");
+        returnValue = 0;
+      break;
+      case PACKET_OP_TEST: 
+        DEBUG_PRINT("processing TEST op\r\n");
+        returnValue = process_test();
+      break;
       default:
         DEBUG_PRINT("unknown opcode %d\r\n", CurrentPacket.op);
+        returnValue = 0;
     }
 
     // Reset the buffer
@@ -267,8 +349,19 @@ void loop() {
     CurrentPacket._index = 0;
     for(uint8_t i = 0; i < COMMS_BUFFER_MAX; i++)
       CurrentPacket.payload[i] = 0;
-    uint8_t commandCompleteBuffer[2] = {PACKET_OP_NOOP, 0};
-    Serial.write(commandCompleteBuffer, 2);
+
+    uint8_t commandCompleteBuffer[6];
+    commandCompleteBuffer[0] = PACKET_OP_NOOP;
+    commandCompleteBuffer[1] = 4;
+    commandCompleteBuffer[2] = returnValue >> 24;
+    commandCompleteBuffer[3] = returnValue >> 16;
+    commandCompleteBuffer[4] = returnValue >>  8;
+    commandCompleteBuffer[5] = returnValue;
+    // a[0] = returnValue >> 24;
+    // a[1] = returnValue >> 16;
+    // a[2] = returnValue >>  8;
+    // a[3] = returnValue;
+    Serial.write(commandCompleteBuffer, 6);
   }
 }
 
