@@ -2,7 +2,7 @@
 #define PLATFORM_H
   #if defined(MIX_TARGET)
     #if defined(MIX_TARGET_host)
-      #include "pins_express_k10.h"
+      #include "pins_farmduino_k15.h"
     #endif
 
     #if defined(MIX_TARGET_rpi)

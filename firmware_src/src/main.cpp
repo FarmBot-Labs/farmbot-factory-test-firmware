@@ -45,11 +45,9 @@ static TMC2130Stepper TMC2130Z = TMC2130Stepper(Z_ENABLE_PIN, Z_DIR_PIN, Z_STEP_
 static AccelStepper stepperZ = AccelStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_DIR_PIN);
 
 #if defined(FARMDUINO_K15)
-
 /** AUX driver */
 static TMC2130Stepper TMC2130AUX = TMC2130Stepper(AUX_ENABLE_PIN, AUX_DIR_PIN, AUX_STEP_PIN, AUX_CHIP_SELECT);
 static AccelStepper stepperAUX = AccelStepper(AccelStepper::DRIVER, AUX_STEP_PIN, AUX_DIR_PIN);
-
 #endif
 
 /** Packet that is currently being built and processed */
@@ -193,6 +191,20 @@ void setup() {
   stepperZ.setEnablePin(Z_ENABLE_PIN);
   stepperZ.setPinsInverted(false, false, true);
   stepperZ.enableOutputs();
+
+#if defined(FARMDUINO_K15)
+  // AUX
+  TMC2130AUX.begin(); 			
+	TMC2130AUX.rms_current(CURRENT_MA); 	
+	TMC2130AUX.stealthChop(1); 	
+  TMC2130AUX.stealth_autoscale(1);
+  TMC2130AUX.microsteps(16);
+  stepperAUX.setMaxSpeed(MAX_SPEED); 
+  stepperAUX.setAcceleration(ACCELERATION); 
+  stepperAUX.setEnablePin(AUX_ENABLE_PIN);
+  stepperAUX.setPinsInverted(false, false, true);
+  stepperAUX.enableOutputs();
+#endif
 
   // setup pins
   pinMode(LIGHTING_PIN, OUTPUT);
