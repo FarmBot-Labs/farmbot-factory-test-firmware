@@ -33,7 +33,9 @@ static AccelStepper stepperZ = AccelStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_
 /** AUX driver */
 static TMC2130Stepper TMC2130AUX = TMC2130Stepper(AUX_ENABLE_PIN, AUX_DIR_PIN, AUX_STEP_PIN, AUX_CHIP_SELECT);
 static AccelStepper stepperAUX = AccelStepper(AccelStepper::DRIVER, AUX_STEP_PIN, AUX_DIR_PIN);
+#endif
 
+#if defined(HAS_ENCODERS)
 /** Encoders */
 static MDLEncoder encoderX = MDLEncoder(MDLEncoder::MDL_X1);
 static MDLEncoder encoderE = MDLEncoder(MDLEncoder::MDL_X2);
@@ -127,7 +129,7 @@ uint32_t process_movement() {
 
 uint32_t process_test() 
 {
-#if defined(FARMDUINO_K15)
+#if defined(HAS_ENCODERS)
   encoderX.reset();
   stepperX.move(500);
   stepperX.enableOutputs();
@@ -187,6 +189,62 @@ uint32_t process_pin() {
   return 0;
 }
 
+void encoderTest() {
+  uint16_t val;
+  const int spi_encoder_offset = 4;
+  const byte read_cmd  = 0x0F;
+  const byte reset_cmd = 0xAA;
+
+  digitalWrite(MDL_CHIP_SELECT,LOW);
+  delay(20);
+  SPI.transfer(reset_cmd);
+  digitalWrite(MDL_CHIP_SELECT,HIGH);
+  delay(20);
+
+
+  // 1.0
+  while(true) {
+    // X1
+    val = 0;
+    digitalWrite(MDL_CHIP_SELECT,LOW);
+    delay(20);
+    SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
+    delayMicroseconds(5);
+    for (size_t i = 0; i < MDL_SPI_READ_SIZE; ++i) {
+      val <<= 8;
+      val |= SPI.transfer(0x01);
+    }
+    digitalWrite(MDL_CHIP_SELECT, HIGH);
+    delay(20);
+    debugPrint("X1=");
+    printBits(val);
+    debugPrint("%d \r\n", val);
+    debugPrint("\r\n\r\n");
+    delay(500);
+  }
+
+  // 1.5
+  while(true) {
+    // X1
+    val = 0;
+    digitalWrite(MDL_CHIP_SELECT,LOW);
+    delay(20);
+    SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
+    delayMicroseconds(5);
+    for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {
+      val <<= 8;
+      val |= SPI.transfer(0x01);
+    }
+    digitalWrite(MDL_CHIP_SELECT,HIGH);
+    delay(20);
+    debugPrint("X1=");
+    printBits(val);
+    debugPrint("%d \r\n", val);
+    debugPrint("\r\n\r\n");
+    delay(500);
+  }
+}
+
 void setup() {
   // setup encoders
   pinMode(MDL_ENABLE_PIN, INPUT_PULLUP);
@@ -195,13 +253,6 @@ void setup() {
 
   Serial.begin(9600);
   SPI.begin();
-
-  while(1==1) {
-  uint32_t val = encoderX.read();
-  DEBUG_PRINT("X1=");
-  DEBUG_PRINT("%d\r\n", val);
-  delay(200);
-}
 
   // Initialize drivers
 
@@ -267,17 +318,17 @@ void setup() {
   stepperAUX.enableOutputs();
 
   // Encoders
-  encoderX.begin();
-  encoderX.reset();
+  // encoderX.begin();
+  // encoderX.reset();
 
-  encoderE.begin();
-  encoderE.reset();
+  // encoderE.begin();
+  // encoderE.reset();
 
-  encoderY.begin();
-  encoderY.reset();
+  // encoderY.begin();
+  // encoderY.reset();
 
-  encoderZ.begin();
-  encoderZ.reset();
+  // encoderZ.begin();
+  // encoderZ.reset();
 #endif
 
   // setup pins
@@ -306,6 +357,8 @@ void setup() {
   for(uint8_t i = 0; i < COMMS_BUFFER_MAX; i++)
     CurrentPacket.payload[i] = 0x69;
   DEBUG_PRINT("ok\r\n");
+// process_test();
+  encoderTest();
 }
 
 void loop() {

@@ -12,10 +12,12 @@
 
     #if defined(MIX_TARGET_rpi3)
       #include "pins_farmduino_k15.h"
+      #define HAS_ENCODERS 1
 
     #endif
   #else // if MIX_TARGET is not defined
-      // #include "pins_express_k10.h"
-      #include "pins_farmduino_k15.h"
+      #include "pins_express_k10.h"
+      #define HAS_ENCODERS 1
+      // #include "pins_farmduino_k15.h"
   #endif
 #endif
