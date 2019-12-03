@@ -195,48 +195,37 @@ void encoderTest() {
   const byte read_cmd  = 0x0F;
   const byte reset_cmd = 0xAA;
 
+  digitalWrite(MDL_ENABLE_PIN, LOW);
+  delay(5);
+  digitalWrite(MDL_ENABLE_PIN, HIGH);
+  delay(20);
+
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   digitalWrite(MDL_CHIP_SELECT,LOW);
-  delay(20);
+  delayMicroseconds(2);
   SPI.transfer(reset_cmd);
+  delayMicroseconds(5);
   digitalWrite(MDL_CHIP_SELECT,HIGH);
+  SPI.endTransaction();
   delay(20);
-
-
-  // 1.0
-  while(true) {
-    // X1
-    val = 0;
-    digitalWrite(MDL_CHIP_SELECT,LOW);
-    delay(20);
-    SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
-    delayMicroseconds(5);
-    for (size_t i = 0; i < MDL_SPI_READ_SIZE; ++i) {
-      val <<= 8;
-      val |= SPI.transfer(0x01);
-    }
-    digitalWrite(MDL_CHIP_SELECT, HIGH);
-    delay(20);
-    debugPrint("X1=");
-    printBits(val);
-    debugPrint("%d \r\n", val);
-    debugPrint("\r\n\r\n");
-    delay(500);
-  }
 
   // 1.5
   while(true) {
     // X1
     val = 0;
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     digitalWrite(MDL_CHIP_SELECT,LOW);
-    delay(20);
+    delayMicroseconds(5);
     SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
     delayMicroseconds(5);
-    for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {
+
+    for (size_t i = 0; i < MDL_SPI_READ_SIZE; ++i) {
       val <<= 8;
       val |= SPI.transfer(0x01);
     }
     digitalWrite(MDL_CHIP_SELECT,HIGH);
-    delay(20);
+    SPI.endTransaction();
+    delay(10);
     debugPrint("X1=");
     printBits(val);
     debugPrint("%d \r\n", val);
@@ -247,8 +236,9 @@ void encoderTest() {
 
 void setup() {
   // setup encoders
-  pinMode(MDL_ENABLE_PIN, INPUT_PULLUP);
+  pinMode(MDL_ENABLE_PIN, OUTPUT);
   pinMode(MDL_CHIP_SELECT, OUTPUT);
+  digitalWrite(MDL_ENABLE_PIN, HIGH);
   digitalWrite(MDL_CHIP_SELECT, HIGH);
 
   Serial.begin(9600);
