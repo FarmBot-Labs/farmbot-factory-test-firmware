@@ -18,7 +18,7 @@ typedef enum {
   /** ASCII m */
   PACKET_OP_MOVEMENT = 109,
   /** ASCII p */
-  PACKET_OP_PIN = 112,
+  PACKET_OP_PERIPHERAL = 112,
   /** ASCII d */
   PACKET_OP_DEBUG = 100,
   /** ASCII r */

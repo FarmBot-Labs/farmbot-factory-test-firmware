@@ -64,7 +64,7 @@ defmodule POST.Comms do
         steps::unsigned-integer-big-size(32)>>
 
     :ok = UART.write(uart, data)
-    recv_close(uart)
+    recv_close(uart, 10000)
   end
 
   def move2(axis, steps) do
@@ -81,9 +81,9 @@ defmodule POST.Comms do
         steps * -1::unsigned-integer-big-size(32)>>
 
     :ok = UART.write(uart, move1)
-    recv(uart)
+    recv(uart, 10000)
     :ok = UART.write(uart, move2)
-    recv_close(uart)
+    recv_close(uart, 10000)
   end
 
   @doc "writes a pin number"
@@ -112,7 +112,7 @@ defmodule POST.Comms do
   def do_sleep_hack, do: Process.sleep(1000)
 
   @doc false
-  def recv_close(uart) do
+  def recv_close(uart, timeout \\ 5000) do
     receive do
       {_, _, {100, _, data}} ->
         debug_message = IO.iodata_to_binary(data)
@@ -125,7 +125,7 @@ defmodule POST.Comms do
         :ok = GenServer.stop(uart, :normal)
         {:ok, return}
     after
-      5000 ->
+      timeout ->
         IO.puts("timeout waiting for command to complete!")
         UART.close(uart)
         :ok = GenServer.stop(uart, :normal)
@@ -133,7 +133,7 @@ defmodule POST.Comms do
     end
   end
 
-  def recv(uart) do
+  def recv(uart, timeout \\ 5000) do
     receive do
       {_, _, {100, _, data}} ->
         debug_message = IO.iodata_to_binary(data)
@@ -143,7 +143,7 @@ defmodule POST.Comms do
       {_, _, {0, 4, <<return::integer-big-size(32)>>}} ->
         {:ok, return}
     after
-      5000 ->
+      timeout ->
         IO.puts("timeout waiting for command to complete!")
         UART.close(uart)
         :ok = GenServer.stop(uart, :normal)

@@ -4,6 +4,7 @@
   #define FARMDUINO_K15
   #define HAS_ENCODERS 1
   #define NUM_STEPPERS 5
+  #define NUM_PERIPHERALS 5
 
   // X-AXIS
   #define X_STEP_PIN 26 // X1_STEP_PIN
@@ -68,10 +69,19 @@
 
     // Peripherals
   #define LIGHTING_PIN 7
+  #define LIGHTING_ADC  A0
+
   #define WATER_PIN 8
+  #define WATER_ADC  A1
+
   #define VACUUM_PIN 9
+  #define VACUUM_ADC  A4
+
   #define PERIPHERAL_4_PIN 10
+  #define PERIPHERAL_4_ADC  A3
+
   #define PERIPHERAL_5_PIN 12
+  #define PERIPHERAL_5_ADC  A2
 
     // Auxiliary motors
   #define AUX_STEP_PIN 40

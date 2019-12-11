@@ -26,24 +26,27 @@ uint32_t process_movement(CommsPacket_t* CurrentPacket, AccelStepper* steppers[]
   MDLEncoder* encoder = encoders[axis];
 #endif
 
+  DEBUG_PRINT("moving %u steps\r\n", numSteps);
+
 #if defined(HAS_ENCODERS)
   encoder->reset();
   DEBUG_PRINT("reset encoder\r\n");
 #endif
-  stepper->move(numSteps);
+  stepper->move(numSteps * STEPS_PER_MM);
   stepper->enableOutputs();
   DEBUG_PRINT("motor enabled\r\n");
   while (stepper->distanceToGo() != 0) {
     stepper->run();
-#if defined(HAS_ENCODERS)
-    ret = encoder->read();
-    DEBUG_PRINT("encoders read %d\r\n", ret);
-#endif
+// don't read every loop. it will case the motors to move very slow
+// #if defined(HAS_ENCODERS)
+//     ret = encoder->read();
+//     // DEBUG_PRINT("encoders read %d\r\n", ret);
+// #endif
   }
   DEBUG_PRINT("moved for %u steps\r\n", numSteps);
     
   stepper->disableOutputs();
-  DEBUG_PRINT("motor disabled");
+  DEBUG_PRINT("motor disabled\r\n");
 #if defined(HAS_ENCODERS)
   ret = encoder->read();
   DEBUG_PRINT("MOVEMENT OK ret=%d\r\n", ret);

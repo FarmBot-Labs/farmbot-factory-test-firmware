@@ -9,11 +9,6 @@
 #include "encoders.h"
 #include "peripherals.h"
 
-#define CURRENT_MA 600
-#define STEPS_PER_MM 5
-#define MAX_SPEED 1000*STEPS_PER_MM
-#define ACCELERATION 1500*STEPS_PER_MM
-
 /** X1 stepper */
 static TMC2130Stepper TMC2130X = TMC2130Stepper(X_ENABLE_PIN, X_DIR_PIN, X_STEP_PIN, X_CHIP_SELECT);
 static AccelStepper stepperX = AccelStepper(AccelStepper::DRIVER, X_STEP_PIN, X_DIR_PIN);
@@ -43,7 +38,7 @@ static MDLEncoder encoderE = MDLEncoder(MDLEncoder::MDL_X2);
 static MDLEncoder encoderY = MDLEncoder(MDLEncoder::MDL_Y);
 static MDLEncoder encoderZ = MDLEncoder(MDLEncoder::MDL_Z);
 
-static MDLEncoder* Encoders[4] = {
+static MDLEncoder* Encoders[NUM_STEPPERS] = {
   &encoderX,
   &encoderE,
   &encoderY,
@@ -74,6 +69,28 @@ static TMC2130Stepper* _Steppers[NUM_STEPPERS] = {
 #endif
 };
 
+static uint8_t EnablePins[NUM_STEPPERS] = {
+  X_ENABLE_PIN,
+  E_ENABLE_PIN,
+  Y_ENABLE_PIN,
+  Z_ENABLE_PIN,
+#if defined(FARMDUINO_K15)
+  AUX_ENABLE_PIN
+#endif
+};
+
+static size_t PeripheralCalibration[NUM_PERIPHERALS];
+
+static size_t Peripherals[NUM_PERIPHERALS][2] = {
+  {LIGHTING_PIN, LIGHTING_ADC},
+  {WATER_PIN, WATER_ADC},
+  {VACUUM_PIN, VACUUM_ADC},
+#if defined(FARMDUINO_K15)
+  {PERIPHERAL_4_PIN, PERIPHERAL_4_ADC},
+  {PERIPHERAL_5_PIN, PERIPHERAL_5_ADC},
+#endif
+};
+
 /** Packet that is currently being built and processed */
 CommsPacket_t CurrentPacket;
 
@@ -99,28 +116,25 @@ void setup()
     _Steppers[i]->microsteps(16);
     Steppers[i]->setMaxSpeed(MAX_SPEED); 
     Steppers[i]->setAcceleration(ACCELERATION); 
-    Steppers[i]->setEnablePin(X_ENABLE_PIN);
+    Steppers[i]->setEnablePin(EnablePins[i]);
     Steppers[i]->setPinsInverted(false, false, true);
     Steppers[i]->enableOutputs();
   }
 
-  // setup pins
-  pinMode(LIGHTING_PIN, OUTPUT);
-  digitalWrite(LIGHTING_PIN, LOW);
+  // setup peripherals
+  for(uint8_t i = 0; i < NUM_PERIPHERALS; i ++) {
+    pinMode(Peripherals[i][0], OUTPUT);
+    pinMode(Peripherals[i][1], INPUT);
+    delay(5);
+    PeripheralCalibration[i] = analogRead(Peripherals[i][1]);
+    if(PeripheralCalibration[i] <= 0)
+    {
+      DEBUG_PRINT("calibration failed. trying again\r\n");
+      PeripheralCalibration[i] = analogRead(Peripherals[i][1]);
+    }
 
-  pinMode(WATER_PIN, OUTPUT);
-  digitalWrite(WATER_PIN, LOW);
-
-  pinMode(VACUUM_PIN, OUTPUT);
-  digitalWrite(VACUUM_PIN, LOW);
-
-#if defined(FARMDUINO_K15)
-  pinMode(PERIPHERAL_4_PIN, OUTPUT);
-  digitalWrite(PERIPHERAL_4_PIN, LOW);
-
-  pinMode(PERIPHERAL_5_PIN, OUTPUT);
-  digitalWrite(PERIPHERAL_5_PIN, LOW);
-#endif
+    DEBUG_PRINT("peripheral %d calibration: %d\r\n", Peripherals[i][0], PeripheralCalibration[i]);
+  }
 
   DEBUG_PRINT("SETUP.......");
   CurrentPacket._state = COMMS_STATE_OP;
@@ -153,9 +167,9 @@ void loop() {
         returnValue = process_movement(&CurrentPacket, Steppers);
 #endif
       break;
-      case PACKET_OP_PIN:
+      case PACKET_OP_PERIPHERAL:
         DEBUG_PRINT("processing pin control\r\n");
-        returnValue = process_pin(&CurrentPacket);
+        returnValue = process_peripheral(&CurrentPacket, Peripherals, PeripheralCalibration);
       break;
       case PACKET_OP_READY:
         DEBUG_PRINT("processing ready message\r\n");

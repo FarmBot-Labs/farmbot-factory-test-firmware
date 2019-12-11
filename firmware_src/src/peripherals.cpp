@@ -4,41 +4,39 @@
 #include "comms.h"
 #include "debug.h"
 
-uint32_t process_pin(CommsPacket_t* CurrentPacket) {
-  PIN_ARG_t pin = (PIN_ARG_t)CurrentPacket->payload[0];
-  uint8_t pinNum;
-  switch(pin) {
-    case PIN_ARG_LIGHTING:
-      DEBUG_PRINT("testing PIN_ARG_LIGHTING\r\n");
-      pinNum = LIGHTING_PIN;
-    break;
-    case PIN_ARG_WATER:
-      DEBUG_PRINT("testing PIN_ARG_WATER\r\n");
-      pinNum = WATER_PIN;
-    break;
-    case PIN_ARG_VACUUM:
-      DEBUG_PRINT("testing PIN_ARG_VACUUM\r\n");
-      pinNum = VACUUM_PIN;
-    break;
-#if defined(FARMDUINO_K15)
-    case PIN_ARG_P4:
-      DEBUG_PRINT("testing PIN_ARG_P4\r\n");
-      pinNum = PERIPHERAL_4_PIN;
-    break;
-    case PIN_ARG_P5:
-      DEBUG_PRINT("testing PIN_ARG_P5\r\n");
-      pinNum = PERIPHERAL_5_PIN;
-    break;
-#endif
+void pumpTest() {
+  digitalWrite(VACUUM_PIN, HIGH);
+  delay(5);
+  while(true) {
+    long data[20];
+    for(int i = 0; i < 5; i++) {
+      data[i] = analogRead(VACUUM_ADC);
+      delay(100);
+    }
+
+    int value = 0;
+    for(int i = 0; i < 5; i++) {
+      value+=data[i];
+    }
+    value = value / 5;
+
+    DEBUG_PRINT("load=%d\r\n", value);
   }
+}
 
-  digitalWrite(pinNum, LOW);
-  DEBUG_PRINT("PIN=%d state=LOW\r\n", pinNum);
+uint32_t process_peripheral(CommsPacket_t* CurrentPacket, size_t peripherals[NUM_PERIPHERALS][2], size_t calibration[NUM_PERIPHERALS]) {
+  PIN_ARG_t pin = (PIN_ARG_t)CurrentPacket->payload[0];
+  digitalWrite(peripherals[pin][0], LOW);
+  DEBUG_PRINT("PIN=%d state=LOW\r\n", peripherals[pin][0]);
 
-  digitalWrite(pinNum, HIGH);
-  DEBUG_PRINT("PIN=%d state=HIGH\r\n", pinNum);
+  digitalWrite(peripherals[pin][0], HIGH);
+  DEBUG_PRINT("PIN=%d state=HIGH\r\n", peripherals[pin][0]);
   delay(500);
-  digitalWrite(pinNum, LOW);
-  DEBUG_PRINT("PIN=%d state=LOW\r\n", pinNum);
-  return 0;
+  uint32_t r = (uint32_t)analogRead(peripherals[pin][1]) -calibration[pin];
+  digitalWrite(peripherals[pin][0], LOW);
+  DEBUG_PRINT("PIN=%d state=LOW adc=%u calibration=%d\r\n", peripherals[pin][0], r, calibration[pin]);
+  if(r < 0)
+    return 0;
+  else
+    return r;
 }

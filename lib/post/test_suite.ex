@@ -55,6 +55,22 @@ defmodule POST.TestSuite do
     {:noreply, %{state | state: :error}}
   end
 
+  def handle_info(:peripheral_error, state) do
+    # Logger.info "in error state"
+    for led <- leds() do
+      led_on(led)
+    end
+
+    Process.sleep(600)
+
+    for led <- leds() do
+      led_off(led)
+    end
+
+    Process.send_after(self(), :peripheral_error, 600)
+    {:noreply, %{state | state: :error}}
+  end
+
   def handle_info(:init, state) do
     Logger.info("starting tests")
 
@@ -106,8 +122,23 @@ defmodule POST.TestSuite do
         {:button, _, _, 0},
         %{state: :peripherals, peripherals: [peripheral | rest]} = state
       ) do
-    Logger.info("testing peripheral: #{peripheral}")
-    _ = POST.Comms.pin(peripheral)
+    case POST.Comms.pin(peripheral) do
+      {:ok, load} when load <= 3 ->
+        Logger.error("failed testing peripheral: #{peripheral} load: #{load}")
+        send(self(), :peripheral_error)
+
+      {:ok, load} when load >= 256 ->
+        Logger.error("failed testing peripheral: #{peripheral} load: #{load}")
+        send(self(), :peripheral_error)
+
+      {:ok, load} ->
+        Logger.info("testing peripheral: #{peripheral} load: #{load}")
+
+      error ->
+        Logger.error("failed testing peripheral: #{peripheral} error: #{inspect(error)}")
+        send(self(), :peripheral_error)
+    end
+
     {:noreply, %{state | peripherals: rest}}
   end
 
