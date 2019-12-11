@@ -3,8 +3,9 @@
 
 #define MDL_CHIP_SELECT 22 
 #define MDL_ENABLE_PIN 49
-
 #define MDL_SPI_READ_SIZE 4
+
+void encoderTest();
 
 class MDLEncoder {
   public:
@@ -16,12 +17,14 @@ class MDLEncoder {
     } MDLEncoderID_t;
 
     MDLEncoder(MDLEncoderID_t encoder);
-    void begin();
     void reset();
     long read();
   private:
     MDLEncoderID_t _encoder;
     uint32_t _encoderValue;
+    const int spi_encoder_offset = 4;
+    const byte read_cmd  = 0x0F;
+    const byte reset_cmd = 0xAA;
 };
 
 #endif

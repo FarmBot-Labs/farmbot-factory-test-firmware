@@ -2,6 +2,8 @@
 #define FARMDUINO_K15_H
   #include "encoders.h"
   #define FARMDUINO_K15
+  #define HAS_ENCODERS 1
+  #define NUM_STEPPERS 5
 
   // X-AXIS
   #define X_STEP_PIN 26 // X1_STEP_PIN

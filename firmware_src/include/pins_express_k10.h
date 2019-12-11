@@ -2,6 +2,8 @@
 #define PINS_EXPRESS_K10
 
   #define EXPRESS_K10
+  // #define HAS_ENCODERS 1
+  #define NUM_STEPPERS 4
 
   // X1-AXIS
   #define X_STEP_PIN 26     // X1_STEP_PIN
