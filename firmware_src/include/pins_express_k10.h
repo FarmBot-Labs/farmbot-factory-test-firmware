@@ -3,6 +3,7 @@
 
   #define EXPRESS_K10
   // #define HAS_ENCODERS 1
+  // #define HAS_LOAD_DETECTORS 1
   #define NUM_STEPPERS 4
   #define NUM_PERIPHERALS 3
 
@@ -69,13 +70,11 @@
     // Peripherals
     // Peripherals
   #define LIGHTING_PIN 7
-  #define LIGHTING_ADC  A0
-
   #define WATER_PIN 8
-  #define WATER_ADC  A1
-
   #define VACUUM_PIN 9
-  #define VACUUM_ADC  A4
+  #define LIGHTING_ADC 255
+  #define WATER_ADC 255
+  #define VACUUM_ADC 255
 
     // Auxiliary motors
   #define AUX_STEP_PIN 40

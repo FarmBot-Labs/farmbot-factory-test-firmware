@@ -14,3 +14,4 @@ config :post, POST.LEDSupervisor, led: POST.GPIOLED
 config :post, POST.LEDPopulator, leds: [17]
 
 config :post, POST.TestSuite, peripherals: [0, 1, 2]
+config :post, POST.TestSuite, motors: [0, 1, 2, 3]

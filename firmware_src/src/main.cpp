@@ -122,10 +122,12 @@ void setup()
   }
 
   // setup peripherals
-  for(uint8_t i = 0; i < NUM_PERIPHERALS; i ++) {
+  for(uint8_t i = 0; i < NUM_PERIPHERALS; i ++) 
+  {
     pinMode(Peripherals[i][0], OUTPUT);
     pinMode(Peripherals[i][1], INPUT);
     delay(5);
+#if defined(HAS_LOAD_DETECTORS)
     PeripheralCalibration[i] = analogRead(Peripherals[i][1]);
     if(PeripheralCalibration[i] <= 0)
     {
@@ -134,6 +136,7 @@ void setup()
     }
 
     DEBUG_PRINT("peripheral %d calibration: %d\r\n", Peripherals[i][0], PeripheralCalibration[i]);
+#endif
   }
 
   DEBUG_PRINT("SETUP.......");

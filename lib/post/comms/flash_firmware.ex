@@ -22,6 +22,10 @@ defmodule POST.Comms.FlashFirmware do
     }
   end
 
+  def force do
+    Avrdude.flash(firmware_file(), Comms.serial_port(), &@firmware_reset_impl.reset/0)
+  end
+
   def flash_firmware(_) do
     if Comms.serial_port() do
       case Comms.test() do

@@ -3,6 +3,7 @@
   #include "encoders.h"
   #define FARMDUINO_K15
   #define HAS_ENCODERS 1
+  #define HAS_LOAD_DETECTORS 1
   #define NUM_STEPPERS 5
   #define NUM_PERIPHERALS 5
 
