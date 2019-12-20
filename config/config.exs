@@ -32,9 +32,9 @@ config :post, POST.PlatformSupervisor, children: []
 if Mix.target() != :host do
   import_config "target.exs"
 else
-  # import_config "profiles/FARMDUINO_K15.ex"
-  import_config "profiles/EXPRESS_K10.ex"
-  config :post, POST.Comms, device: "ttyUSB0"
+  import_config "profiles/FARMDUINO_K15.ex"
+  # import_config "profiles/EXPRESS_K10.ex"
+  # config :post, POST.Comms, device: "ttyUSB0"
   config :post, POST.Comms.FlashFirmware, reset: POST.Comms.FlashFirmware.NullReset
   config :post, POST.ButtonSupervisor, button: POST.NullButton
   config :post, POST.LEDSupervisor, led: POST.NullLED

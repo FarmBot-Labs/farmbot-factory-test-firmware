@@ -106,78 +106,68 @@ defmodule POST.TestSuite do
     {:noreply, %{state | leds: [], state: :peripherals}}
   end
 
+  def handle_info({:button, _, _, 0}, %{state: :leds, leds: [24, 25, 12, 13] = leds} = state) do
+    for led <- leds do
+      led_on(led)
+    end
+
+    {:noreply, %{state | leds: [], state: :peripherals}}
+  end
+
   def handle_info({:button, _, _, 0}, %{state: :leds, leds: [led | rest]} = state) do
     Logger.info("testing led: #{led}")
     led_on(led)
     {:noreply, %{state | leds: rest}}
   end
 
-  def handle_info({:button, _, _, 0}, %{state: :peripherals, peripherals: [peripheral]} = state) do
-    Logger.info("testing peripheral: #{peripheral} (this is the last one)")
-    _ = POST.Comms.pin(peripheral)
-    {:noreply, %{state | peripherals: [], state: :motors}}
-  end
+  # def handle_info({:button, _, _, 0}, %{state: :peripherals, peripherals: [peripheral]} = state) do
+  #   Logger.info("testing peripheral: #{peripheral} (this is the last one)")
+  #   _ = POST.Comms.pin(peripheral)
+  #   {:noreply, %{state | peripherals: [], state: :motors}}
+  # end
 
   def handle_info(
         {:button, _, _, 0},
-        %{state: :peripherals, peripherals: [peripheral | rest]} = state
+        %{state: :peripherals, peripherals: peripherals} = state
       ) do
-    case POST.Comms.pin(peripheral) do
-      {:ok, load} when load <= 3 ->
-        Logger.error("failed testing peripheral: #{peripheral} load: #{load}")
-        send(self(), :peripheral_error)
-
-      {:ok, load} when load >= 256 ->
-        Logger.error("failed testing peripheral: #{peripheral} load: #{load}")
-        send(self(), :peripheral_error)
-
-      {:ok, load} ->
-        Logger.info("testing peripheral: #{peripheral} load: #{load}")
-
-      error ->
-        Logger.error("failed testing peripheral: #{peripheral} error: #{inspect(error)}")
-        send(self(), :peripheral_error)
+    if POST.Comms.all_pins(peripherals) do
+      {:noreply, %{state | peripherals: [], state: :motors}}
+    else
+      Logger.error("failed testing peripherals")
+      send(self(), :peripheral_error)
+      {:noreply, state}
     end
-
-    {:noreply, %{state | peripherals: rest}}
   end
 
-  def handle_info({:button, _, _, 0}, %{state: :motors, motors: [motor]} = state) do
-    Logger.info("testing motor: #{motor} (this is the last one)")
+  # def handle_info({:button, _, _, 0}, %{state: :motors, motors: [motor]} = state) do
+  #   Logger.info("testing motor: #{motor} (this is the last one)")
 
-    case POST.Comms.move2(motor, 500) do
-      {:ok, steps} when steps >= 1 ->
-        send(self(), :init)
-        :ok
+  #   case POST.Comms.move2(motor, 500) do
+  #     {:ok, steps} when steps >= 1 ->
+  #       send(self(), :init)
+  #       :ok
 
-      {:ok, steps} ->
-        send(self(), :encoder_error)
-        Logger.error("movement test failed! #{steps}")
+  #     {:ok, steps} ->
+  #       send(self(), :encoder_error)
+  #       Logger.error("movement test failed! #{steps}")
 
-      :error ->
-        send(self(), :encoder_error)
-        Logger.error("movement test failed (no response)")
+  #     :error ->
+  #       send(self(), :encoder_error)
+  #       Logger.error("movement test failed (no response)")
+  #   end
+
+  #   {:noreply, %{state | motors: [], state: :complete}}
+  # end
+
+  def handle_info({:button, _, _, 0}, %{state: :motors, motors: motors} = state) do
+    Logger.info("testing motors:")
+
+    if POST.Comms.move_all(motors, 500) do
+      {:noreply, %{state | motors: [], state: :complete}}
+    else
+      send(self(), :encoder_error)
+      Logger.error("movement test failed")
+      {:noreply, state}
     end
-
-    {:noreply, %{state | motors: [], state: :complete}}
-  end
-
-  def handle_info({:button, _, _, 0}, %{state: :motors, motors: [motor | rest]} = state) do
-    Logger.info("testing motor: #{motor}")
-
-    case POST.Comms.move2(motor, 500) do
-      {:ok, steps} when steps >= 1 ->
-        :ok
-
-      {:ok, steps} ->
-        send(self(), :encoder_error)
-        Logger.error("movement test failed! #{steps}")
-
-      :error ->
-        send(self(), :encoder_error)
-        Logger.error("movement test failed (no response)")
-    end
-
-    {:noreply, %{state | motors: rest}}
   end
 end

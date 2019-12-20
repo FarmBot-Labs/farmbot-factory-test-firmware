@@ -86,6 +86,41 @@ defmodule POST.Comms do
     recv_close(uart, 10000)
   end
 
+  def move_all(motors, steps) do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
+
+    r =
+      motors
+      |> Enum.map(fn
+        axis ->
+          move1 =
+            <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
+              steps::unsigned-integer-big-size(32)>>
+
+          move2 =
+            <<109::integer-size(8), 0x5::integer-size(8), axis::integer-size(8),
+              steps * -1::unsigned-integer-big-size(32)>>
+
+          :ok = UART.write(uart, move1)
+          recv(uart, 10000)
+          :ok = UART.write(uart, move2)
+          recv(uart, 10000)
+      end)
+      |> Enum.all?(fn
+        {:ok, steps} when steps >= 1 ->
+          true
+
+        _ ->
+          false
+      end)
+
+    UART.close(uart)
+
+    r
+  end
+
   @doc "writes a pin number"
   def pin(number) do
     {:ok, uart} = UART.start_link()
@@ -94,6 +129,34 @@ defmodule POST.Comms do
     data = <<112::integer-size(8), 0x1::integer-size(8), number::integer-size(8)>>
     :ok = UART.write(uart, data)
     recv_close(uart)
+  end
+
+  def all_pins(pins) do
+    {:ok, uart} = UART.start_link()
+    :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
+    do_sleep_hack()
+
+    r =
+      pins
+      |> Enum.map(fn
+        number ->
+          data = <<112::integer-size(8), 0x1::integer-size(8), number::integer-size(8)>>
+          :ok = UART.write(uart, data)
+          recv(5000)
+      end)
+      |> Enum.all?(fn
+        {:ok, load} when load <= 3 ->
+          false
+
+        {:ok, _} ->
+          true
+
+        _ ->
+          false
+      end)
+
+    UART.close(uart)
+    r
   end
 
   def reset_test do
