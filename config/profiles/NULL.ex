@@ -1,9 +1,7 @@
-use Mix.Config
+import Config
 IO.puts("using NULL profile")
 
 config :post, POST.Comms, device: nil
-
-config :post, POST.Comms.FlashFirmware, reset: POST.Comms.FlashFirmware.NullReset
 
 config :post, POST.ButtonSupervisor, button: POST.NullButton
 config :post, POST.ButtonPopulator, buttons: [16]

@@ -1,9 +1,9 @@
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
-use Mix.Config
+import Config
 
 config :post, target: Mix.target()
 
@@ -17,7 +17,7 @@ config :nerves, :firmware, rootfs_overlay: "rootfs_overlay"
 # involved with firmware updates.
 
 config :shoehorn,
-  init: [:nerves_runtime, :vintage_net],
+  init: [:nerves_runtime],
   app: Mix.Project.config()[:app]
 
 # Use Ringlogger as the logger backend and remove :console.
@@ -32,10 +32,9 @@ config :post, POST.PlatformSupervisor, children: []
 if Mix.target() != :host do
   import_config "target.exs"
 else
-  import_config "profiles/FARMDUINO_K15.ex"
-  # import_config "profiles/EXPRESS_K10.ex"
+  import_config "profiles/FARMDUINO_K16.ex"
+  # import_config "profiles/EXPRESS_K11.ex"
   # config :post, POST.Comms, device: "ttyUSB0"
-  config :post, POST.Comms.FlashFirmware, reset: POST.Comms.FlashFirmware.NullReset
   config :post, POST.ButtonSupervisor, button: POST.NullButton
   config :post, POST.LEDSupervisor, led: POST.NullLED
 end

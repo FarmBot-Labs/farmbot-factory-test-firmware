@@ -2,18 +2,6 @@ defmodule POST.Comms.FlashFirmware do
   @moduledoc "Task to flash firmware on boot"
   alias POST.Comms
 
-  defmodule Reset do
-    @moduledoc "Behaviour for platform specific bootloader reset mode"
-    @doc "Reset the firmware line into bootloader mode"
-    @callback reset() :: any()
-  end
-
-  @firmware_reset_impl Application.get_env(:post, __MODULE__)[:reset]
-  @firmware_reset_impl ||
-    Mix.raise("""
-    Firmware reset implementation not specified.
-    """)
-
   @doc false
   def child_spec(opts) do
     %{
@@ -23,14 +11,14 @@ defmodule POST.Comms.FlashFirmware do
   end
 
   def force do
-    Avrdude.flash(firmware_file(), Comms.serial_port(), &@firmware_reset_impl.reset/0)
+    Avrdude.flash(firmware_file(), Comms.serial_port())
   end
 
   def flash_firmware(_) do
     if Comms.serial_port() do
       case Comms.test() do
         :error ->
-          _ = Avrdude.flash(firmware_file(), Comms.serial_port(), &@firmware_reset_impl.reset/0)
+          _ = Avrdude.flash(firmware_file(), Comms.serial_port())
           _ = Comms.test()
           :ignore
 

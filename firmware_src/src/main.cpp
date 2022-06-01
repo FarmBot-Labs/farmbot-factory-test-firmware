@@ -25,7 +25,7 @@ static AccelStepper stepperY = AccelStepper(AccelStepper::DRIVER, Y_STEP_PIN, Y_
 static TMC2130Stepper TMC2130Z = TMC2130Stepper(Z_ENABLE_PIN, Z_DIR_PIN, Z_STEP_PIN, Z_CHIP_SELECT);
 static AccelStepper stepperZ = AccelStepper(AccelStepper::DRIVER, Z_STEP_PIN, Z_DIR_PIN);
 
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
 /** AUX driver */
 static TMC2130Stepper TMC2130AUX = TMC2130Stepper(AUX_ENABLE_PIN, AUX_DIR_PIN, AUX_STEP_PIN, AUX_CHIP_SELECT);
 static AccelStepper stepperAUX = AccelStepper(AccelStepper::DRIVER, AUX_STEP_PIN, AUX_DIR_PIN);
@@ -43,7 +43,7 @@ static MDLEncoder* Encoders[NUM_STEPPERS] = {
   &encoderE,
   &encoderY,
   &encoderZ,
-#if defined(FARMDUINO_K15) // hack since there's no encoder for the aux driver
+#if defined(FARMDUINO_K16) // hack since there's no encoder for the aux driver
   &encoderZ
 #endif
 };
@@ -54,7 +54,7 @@ static AccelStepper* Steppers[NUM_STEPPERS] = {
   &stepperE,
   &stepperY,
   &stepperZ,
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   &stepperAUX
 #endif
 };
@@ -64,7 +64,7 @@ static TMC2130Stepper* _Steppers[NUM_STEPPERS] = {
   &TMC2130E,
   &TMC2130Y,
   &TMC2130Z,
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   &TMC2130AUX
 #endif
 };
@@ -74,7 +74,7 @@ static uint8_t EnablePins[NUM_STEPPERS] = {
   E_ENABLE_PIN,
   Y_ENABLE_PIN,
   Z_ENABLE_PIN,
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   AUX_ENABLE_PIN
 #endif
 };
@@ -85,16 +85,18 @@ static size_t Peripherals[NUM_PERIPHERALS][2] = {
   {LIGHTING_PIN, LIGHTING_ADC},
   {WATER_PIN, WATER_ADC},
   {VACUUM_PIN, VACUUM_ADC},
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   {PERIPHERAL_4_PIN, PERIPHERAL_4_ADC},
   {PERIPHERAL_5_PIN, PERIPHERAL_5_ADC},
+  {ROTARY_FWD_PIN, ROTARY_ADC},
+  {ROTARY_REV_PIN, ROTARY_ADC},
 #endif
 };
 
 /** Packet that is currently being built and processed */
 CommsPacket_t CurrentPacket;
 
-void setup() 
+void setup()
 {
 #if defined(HAS_ENCODERS)
   // setup encoders
@@ -109,20 +111,20 @@ void setup()
 
   // Initialize drivers
   for(size_t i = 0; i<NUM_STEPPERS; i++) {
-    _Steppers[i]->begin(); 			
-	  _Steppers[i]->rms_current(CURRENT_MA); 	
-	  _Steppers[i]->stealthChop(1); 	
+    _Steppers[i]->begin();
+	  _Steppers[i]->rms_current(CURRENT_MA);
+	  _Steppers[i]->stealthChop(1);
     _Steppers[i]->stealth_autoscale(1);
     _Steppers[i]->microsteps(16);
-    Steppers[i]->setMaxSpeed(MAX_SPEED); 
-    Steppers[i]->setAcceleration(ACCELERATION); 
+    Steppers[i]->setMaxSpeed(MAX_SPEED);
+    Steppers[i]->setAcceleration(ACCELERATION);
     Steppers[i]->setEnablePin(EnablePins[i]);
     Steppers[i]->setPinsInverted(false, false, true);
     Steppers[i]->enableOutputs();
   }
 
   // setup peripherals
-  for(uint8_t i = 0; i < NUM_PERIPHERALS; i ++) 
+  for(uint8_t i = 0; i < NUM_PERIPHERALS; i ++)
   {
     pinMode(Peripherals[i][0], OUTPUT);
     pinMode(Peripherals[i][1], INPUT);
@@ -178,7 +180,7 @@ void loop() {
         DEBUG_PRINT("processing ready message\r\n");
         returnValue = 0;
       break;
-      case PACKET_OP_TEST: 
+      case PACKET_OP_TEST:
         DEBUG_PRINT("processing TEST op\r\n");
         returnValue = process_test(&CurrentPacket);
       break;
@@ -234,7 +236,7 @@ void serialEvent() {
         break;
       }
 
-      // Read bytes for payload until 
+      // Read bytes for payload until
       case COMMS_STATE_PAYLOAD: {
         CurrentPacket.payload[CurrentPacket._index] = in;
         DEBUG_PRINT("paylod byte read\r\n");

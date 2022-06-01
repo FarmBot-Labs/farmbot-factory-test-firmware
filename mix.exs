@@ -2,15 +2,15 @@ defmodule POST.MixProject do
   use Mix.Project
 
   @app :post
-  @version "0.1.0"
-  @all_targets [:rpi, :rpi3]
+  @version "0.2.0"
+  @all_targets [:rpi02w, :rpi4]
 
   def project do
     [
       app: @app,
       version: @version,
-      elixir: "~> 1.9",
-      archives: [nerves_bootstrap: "~> 1.6"],
+      elixir: "~> 1.13",
+      archives: [nerves_bootstrap: "~> 1.10"],
       start_permanent: Mix.env() == :prod,
       build_embedded: true,
       aliases: [loadconfig: [&bootstrap/1]],
@@ -49,28 +49,33 @@ defmodule POST.MixProject do
   defp deps do
     [
       # Dependencies for all targets
-      {:nerves, "~> 1.5.0", runtime: false},
+      {:nerves, "~> 1.7", runtime: false},
       {:elixir_make, "~> 0.6", runtime: false},
-      {:shoehorn, "~> 0.6"},
-      {:ring_logger, "~> 0.6"},
+      {:shoehorn, "~> 0.9"},
+      {:ring_logger, "~> 0.8"},
       {:toolshed, "~> 0.2"},
-      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev, :test], runtime: false},
-      {:circuits_uart, "~> 1.3"},
-      {:muontrap, "~> 0.5.0"},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:circuits_uart, "~> 1.4"},
+      {:muontrap, "~> 1.0"},
 
       # Dependencies for all targets except :host
-      {:nerves_runtime, "~> 0.10", targets: @all_targets},
+      {:nerves_runtime, "~> 0.11", targets: @all_targets},
       {:busybox, "~> 0.1", targets: @all_targets},
-      {:vintage_net, "~> 0.6.0", targets: @all_targets},
-      {:nerves_firmware_ssh, "~> 0.2", targets: @all_targets},
-      {:nerves_time, "~> 0.2", targets: @all_targets},
-      {:mdns_lite, "~> 0.4", targets: @all_targets},
-      {:circuits_gpio, "~> 0.4.3", targets: @all_targets},
+      {:nerves_time, "~> 0.4", targets: @all_targets},
+      {:circuits_gpio, "~> 1.0", targets: @all_targets},
 
       # Dependencies for specific targets
-      {:nerves_system_br, "~> 1.9.5", runtime: false, targets: @all_targets, override: true},
-      {:farmbot_system_rpi, "~> 1.9.0-farmbot.1", runtime: false, targets: :rpi},
-      {:farmbot_system_rpi3, "~> 1.9.1-farmbot.2", runtime: false, targets: :rpi3}
+      {:nerves_system_br, "~> 1.18", runtime: false, targets: @all_targets, override: true},
+      {:farmbot_system_rpi3,
+       git: "https://github.com/FarmBot/farmbot_system_rpi3",
+       tag: "v1.18.1-farmbot.1",
+       runtime: false,
+       targets: :rpi02w},
+      {:farmbot_system_rpi4,
+       git: "https://github.com/FarmBot/farmbot_system_rpi4",
+       tag: "v1.18.1-farmbot.1",
+       runtime: false,
+       targets: :rpi4}
     ]
   end
 

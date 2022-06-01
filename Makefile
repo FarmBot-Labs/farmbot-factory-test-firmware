@@ -32,13 +32,13 @@ PREFIX = $(MIX_APP_PATH)/priv
 FIRMWARE_SRC := $(wildcard firmware_src/src/*.cpp)
 FIRMWARE_SRC += $(wildcard firmware_src/include/*.h)
 
-.PHONY: all clean burn_encoder_tracker
+.PHONY: all clean
 
 all: $(PREFIX) $(PREFIX)/firmware.hex
 
 clean:
 	platformio run -d firmware_src -t clean
-	$(RM) $(PREFIX)/firmware.hex 
+	$(RM) $(PREFIX)/firmware.hex
 
 $(PREFIX):
 	mkdir -p $(PREFIX)
@@ -46,6 +46,3 @@ $(PREFIX):
 $(PREFIX)/firmware.hex: $(FIRMWARE_SRC)
 	PLATFORMIO_BUILD_FLAGS="-DMIX_TARGET_$(MIX_TARGET) -DMIX_TARGET=\"$(MIX_TARGET)\"" platformio run -d firmware_src/
 	cp firmware_src/.pio/build/megaatmega2560/firmware.hex $(PREFIX)/firmware.hex
-
-burn_encoder_tracker:
-	st-flash write firmware_src/priv/EncoderTracker\(12352db\ mode0\).bin 0x8000000

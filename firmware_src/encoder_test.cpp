@@ -45,7 +45,7 @@
 #define   ADC5  A2
 
 //////////////// STM32 ////////////////
-#define NSS_PIN 22 
+#define NSS_PIN 22
 #define STM_RST_PIN 49
 
 static const int spi_encoder_offset = 4;
@@ -118,7 +118,7 @@ void setup() {
   delay(5);
   digitalWrite(STM_RST_PIN, HIGH);
   delay(20);
-  
+
   //reset all encoder
   ResetEncoder();
   delay(20);
@@ -127,8 +127,8 @@ void setup() {
 
   RunTest();
 }
- 
-void loop() 
+
+void loop()
 {
 }
 
@@ -140,7 +140,7 @@ void RunTest()
   bool encoder2Error = false;
   bool encoder3Error = false;
   bool encoder4Error = false;
-  
+
   bool adc1Error = false;
   bool adc2Error = false;
   bool adc3Error = false;
@@ -163,7 +163,7 @@ void RunTest()
   encoder2 = ReadEncoder(_X2);
   encoder3 = ReadEncoder(_Y);
   encoder4 = ReadEncoder(_Z);
-  
+
   Serial.print("X1 reading: ");
   Serial.println(encoder1);
   Serial.print("X2 reading: ");
@@ -172,7 +172,7 @@ void RunTest()
   Serial.println(encoder3);
   Serial.print("Z reading: ");
   Serial.println(encoder4);
-  
+
   encoder1Error = encoder1 < encoderThreshold;
   encoder2Error = encoder2 < encoderThreshold;
   encoder3Error = encoder3 < encoderThreshold;
@@ -186,7 +186,7 @@ void RunTest()
   digitalWrite(FET3,1);
   digitalWrite(FET4,1);
   digitalWrite(FET5,1);
-  
+
   //move motors backwards
   SendPulse(num_pulse, reverse_val);
 
@@ -196,7 +196,7 @@ void RunTest()
   adc3Error = analogRead(ADC3) > adcThreshold;
   adc4Error = analogRead(ADC4) > adcThreshold;
   adc5Error = analogRead(ADC5) > adcThreshold;
-  
+
   //turn off mosfets with OK readings
   digitalWrite(FET1, !adc1Error);
   digitalWrite(FET2, !adc2Error);
@@ -234,7 +234,7 @@ void ResetEncoder()
 {
   const byte reset_cmd = 0xF0;
 
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
   digitalWrite(NSS_PIN,LOW);
   delayMicroseconds(2);
   SPI.transfer(reset_cmd);
@@ -251,7 +251,7 @@ long ReadEncoder(SpiEncoders encoder)
   const int readSize = 4;
   long encoderVal = 0;
 
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
   digitalWrite(NSS_PIN,LOW);
   delayMicroseconds(2);
   SPI.transfer(read_cmd | (encoder << spi_encoder_offset) );
@@ -262,7 +262,7 @@ long ReadEncoder(SpiEncoders encoder)
     encoderVal <<= 8;
     encoderVal |= SPI.transfer(0x01);
   }
-  
+
   digitalWrite(NSS_PIN,HIGH);
   SPI.endTransaction();
   delay(10);

@@ -14,7 +14,7 @@ void encoderTest() {
     // X1
     val = 0;
     digitalWrite(MDL_CHIP_SELECT,LOW);
-    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE3));
     SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
     delayMicroseconds(5);
     for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {
@@ -30,7 +30,7 @@ void encoderTest() {
     // X2
     val = 0;
     digitalWrite(MDL_CHIP_SELECT,LOW);
-    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE3));
     SPI.transfer(read_cmd | (0b0010 << spi_encoder_offset) );
     delayMicroseconds(5);
     for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {
@@ -46,7 +46,7 @@ void encoderTest() {
     // Y1
     val = 0;
     digitalWrite(MDL_CHIP_SELECT,LOW);
-    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE3));
     SPI.transfer(read_cmd | (0b0100 << spi_encoder_offset) );
     delayMicroseconds(5);
     for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {
@@ -62,7 +62,7 @@ void encoderTest() {
     // Z1
     val = 0;
     digitalWrite(MDL_CHIP_SELECT,LOW);
-    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE3));
     SPI.transfer(read_cmd | (0b1000 << spi_encoder_offset) );
     delayMicroseconds(5);
     for (size_t i = 0; i < MDL_SPI_READ_SIZE+1; ++i) {

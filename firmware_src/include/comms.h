@@ -33,7 +33,7 @@ typedef enum {
   MOVEMENT_AXIS_X2,
   MOVEMENT_AXIS_Y1,
   MOVEMENT_AXIS_Z1,
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   MOVEMENT_AXIS_AUX
 #endif
 } MOVEMENT_AXIS_t;
@@ -42,7 +42,7 @@ typedef enum {
   PIN_ARG_LIGHTING,
   PIN_ARG_WATER,
   PIN_ARG_VACUUM,
-#if defined(FARMDUINO_K15)
+#if defined(FARMDUINO_K16)
   PIN_ARG_P4,
   PIN_ARG_P5
 #endif

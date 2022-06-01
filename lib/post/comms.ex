@@ -1,7 +1,7 @@
 defmodule POST.Comms do
   @moduledoc """
   handles communicating with the arduino.
-  UART connection is not stored, and shoudl be closed after every test
+  UART connection is not stored, and should be closed after every test
   """
 
   alias Circuits.UART
@@ -18,6 +18,7 @@ defmodule POST.Comms do
 
   @doc "tests comms"
   def test do
+    Process.sleep(5000)
     {:ok, uart} = UART.start_link()
     :ok = UART.open(uart, serial_port(), active: true, speed: 9600, framing: Framing)
     do_sleep_hack()

@@ -3,7 +3,7 @@
 
 #include "encoders.h"
 
-void encoderTest() 
+void encoderTest()
 #if defined(HAS_ENCODERS)
 {
   uint16_t val;
@@ -16,7 +16,7 @@ void encoderTest()
   digitalWrite(MDL_ENABLE_PIN, HIGH);
   delay(20);
 
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
   digitalWrite(MDL_CHIP_SELECT,LOW);
   delayMicroseconds(2);
   SPI.transfer(reset_cmd);
@@ -29,7 +29,7 @@ void encoderTest()
   while(true) {
     // X1
     val = 0;
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
     digitalWrite(MDL_CHIP_SELECT,LOW);
     delayMicroseconds(5);
     SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );
@@ -49,7 +49,7 @@ void encoderTest()
     delay(500);
   }
 }
-#else 
+#else
 {}
 #endif
 
@@ -63,7 +63,7 @@ void MDLEncoder::reset() {
   digitalWrite(MDL_ENABLE_PIN, HIGH);
   delay(20);
 
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
   digitalWrite(MDL_CHIP_SELECT,LOW);
   delayMicroseconds(2);
   SPI.transfer(reset_cmd);
@@ -75,7 +75,7 @@ void MDLEncoder::reset() {
 
 long MDLEncoder::read() {
   _encoderValue = 0;
-  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE3));
   digitalWrite(MDL_CHIP_SELECT,LOW);
   delayMicroseconds(5);
   SPI.transfer(read_cmd | (0b0001 << spi_encoder_offset) );

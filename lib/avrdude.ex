@@ -5,8 +5,8 @@ defmodule Avrdude do
 
   @uart_speed 115_200
 
-  @spec flash(Path.t(), Path.t(), (() -> :ok)) :: {number, any()}
-  def flash(hex_path, tty_path, reset_fun) do
+  @spec flash(Path.t(), Path.t()) :: {number, any()}
+  def flash(hex_path, tty_path) do
     tty_path =
       if String.contains?(tty_path, "/dev") do
         tty_path
@@ -27,8 +27,6 @@ defmodule Avrdude do
       "-Uflash:w:#{hex_path}:i"
     ]
 
-    # call the function for resetting the line before executing avrdude.
-    :ok = reset_fun.()
     MuonTrap.cmd("avrdude", args, into: IO.stream(:stdio, :line))
   end
 end

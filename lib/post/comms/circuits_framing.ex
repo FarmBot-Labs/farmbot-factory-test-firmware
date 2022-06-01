@@ -1,6 +1,6 @@
 defmodule POST.Comms.Framing do
   @moduledoc """
-  Implemetation of the Framing behaviour for the dirty
+  Implementation of the Framing behaviour for the dirty
   comms system for this application.
 
   Messages are shaped like:
@@ -14,8 +14,8 @@ defmodule POST.Comms.Framing do
     * argv[0] uint8 axis id. (0-3)
     * argv[1-3] uint32 number of steps to move
   * `0x70` - pin control. Turns a pin for 300 ms, and back off again
-    * argv[0] uint8 pin to control. 
-  * `0x64` - debug messages from the arduino. 
+    * argv[0] uint8 pin to control.
+  * `0x64` - debug messages from the arduino.
     * argv cstring human readable message that can be wrote to stdio
   """
   @behaviour Circuits.UART.Framing
